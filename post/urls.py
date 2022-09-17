@@ -14,5 +14,6 @@ urlpatterns = [
     path('tweet/<int:tweet_id>/comments/<int:pk>/', views.CommentRetrieveUpdateDestroyAPIView.as_view()),
     path('tweet/<int:tweet_id>/<str:reaction_slug>/', views.PostTweetReaction.as_view()),
     path('tweet/<int:tweet_id>/comments/<int:comment_id>/<str:reaction_slug>/', views.PostCommentReaction.as_view()),
+    path('recommendations/', views.RecommendationsView.as_view()),
 
 ]

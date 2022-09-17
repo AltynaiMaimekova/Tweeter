@@ -23,6 +23,7 @@ class Post(models.Model):
 class Tweet(Post):
     text = models.CharField(max_length=140)
 
+    ## Первоначальная реализация проекта Задание 5
     # def get_likes(self):
     #     likes = LikeTweet.objects.filter(tweet=self, reaction=True)
     #     return likes.count()
@@ -32,18 +33,22 @@ class Tweet(Post):
     #     return dislikes.count()
 
     def get_reactions(self):
-        reaction_number = ReactionTweet.objects.filter(tweet=self)\
+        reaction_number = ReactionTweet.objects.filter(tweet=self, reaction__isnull=False)\
             .values('reaction__reaction_type').annotate(count=Count('reaction'))
         reactions = {}
         for i in reaction_number:
             reactions[i['reaction__reaction_type']] = i['count']
         return reactions
 
+    def __str__(self):
+        return f'{self.text} from {self.user.username} at {self.updated}'
+
 
 class Comment(Post):
     tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE)
     text = models.CharField(max_length=255)
 
+    ## Первоначальная реализация проекта Задание 5
     # def get_likes(self):
     #     likes = LikeComment.objects.filter(comment=self, reaction=True)
     #     return likes.count()
@@ -60,6 +65,40 @@ class Comment(Post):
             reactions[i['reaction__reaction_type']] = i['count']
         return reactions
 
+
+class ReactionType(models.Model):
+    slug = models.CharField(max_length=50, unique=True)
+    reaction_type = models.CharField(max_length=50)
+
+    def __str__(self):
+        return f'{self.reaction_type}'
+
+
+class ReactionTweet(models.Model):
+    tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    reaction = models.ForeignKey(ReactionType, on_delete=models.CASCADE, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('user', 'tweet')
+
+    def __str__(self):
+        return f'{self.tweet} got {self.reaction.reaction_type} from {self.user.username}'
+
+
+class ReactionComment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    reaction = models.ForeignKey(ReactionType, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user', 'comment')
+
+    def __str__(self):
+        return f'{self.comment} got {self.reaction.reaction_type} from {self.user.username}'
+
+
+## Коди ниже - это первоначальная реализация проекта согласно Заданию 5.
 
 # class LikeTweet(models.Model):
 #     tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE)
@@ -83,37 +122,3 @@ class Comment(Post):
 #
 #     def __str__(self):
 #         return f'like from {self.user}'
-
-
-class ReactionType(models.Model):
-    slug = models.CharField(max_length=50, unique=True)
-    reaction_type = models.CharField(max_length=50)
-
-    def __str__(self):
-        return f'{self.reaction_type}'
-
-
-class ReactionTweet(models.Model):
-    tweet = models.ForeignKey(Tweet, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    reaction = models.ForeignKey(ReactionType, on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('user', 'tweet')
-
-    def __str__(self):
-        return f'{self.tweet} got {self.reaction.reaction_type} from {self.user.username}'
-
-
-class ReactionComment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
-    reaction = models.ForeignKey(ReactionType, on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('user', 'comment')
-
-    def __str__(self):
-        return f'{self.comment} got {self.reaction.reaction_type} from {self.user.username}'
-
-

@@ -1,6 +1,7 @@
 from django.db import IntegrityError
 from django.shortcuts import render
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
@@ -8,6 +9,7 @@ from rest_framework.authentication import SessionAuthentication, TokenAuthentica
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, get_object_or_404
 
 from .models import Tweet, Comment, ReactionTweet, ReactionComment, ReactionType
+from account.models import Subscription
 from .serializers import TweetSerializer, CommentSerializer
 from .permissions import IsAuthorPermission
 from .paginations import StandardPagination
@@ -68,13 +70,16 @@ class PostTweetReaction(APIView):
             reaction = ReactionTweet.objects.create(user=request.user, tweet=tweet, reaction=user_reaction)
         except IntegrityError:
             reaction = ReactionTweet.objects.get(user=request.user, tweet=tweet)
-            if reaction.reaction.slug == user_reaction.slug:
-                reaction.delete()
-                data = {'delete': f'tweet {tweet_id} lost {reaction.reaction.slug} from {request.user.username}'}
+            if reaction.reaction == user_reaction:
+                reaction.reaction = None
+                # reaction.save()
+                # reaction.delete()
+                data = {'delete': f'tweet {tweet_id} lost reaction from {request.user.username}'}
             else:
                 reaction.reaction = user_reaction
-                reaction.save()
+                # reaction.save()
                 data = {'message': f'tweet {tweet_id} got {reaction.reaction.slug} from {request.user.username}'}
+            reaction.save()
             return Response(data, status=status.HTTP_200_OK)
         else:
             data = {'message': f'tweet {tweet_id} got {reaction.reaction.slug} from {request.user.username}'}
@@ -101,6 +106,20 @@ class PostCommentReaction(APIView):
             data = {'message': f'comment {comment_id} to tweet {tweet_id} got {reaction.reaction.slug} from {request.user.username}'}
             return Response(data, status=status.HTTP_201_CREATED)
 
+
+class RecommendationsView(APIView):
+    authentication_classes = [SessionAuthentication, TokenAuthentication]
+    permission_classes = [IsAuthenticated, ]
+
+    def get(self, request):
+        subscriptions = Subscription.objects.filter(follower=request.user.profile)
+        recommendations = []
+        for s in subscriptions:
+            tweets = Tweet.objects.filter(user=s.followed.user)
+            for t in tweets:
+                recommendations.append(t)
+        data = {'message': f'recommended tweets {recommendations}'}
+        return Response(data, status=status.HTTP_200_OK)
 
 ## Код ниже - это первоначальная реализация лайков и дизлайков (Задание 5)
 
