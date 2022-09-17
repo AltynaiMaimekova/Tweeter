@@ -119,7 +119,7 @@ class RecommendationsView(APIView):
             for t in tweets:
                 recommendations.append(t)
         recommendations.sort(key=lambda x: x.created, reverse=True)
-        data = {'message': f'recommended tweets {recommendations}'}
+        data = {'recommended tweets': f'{recommendations}'}
         return Response(data, status=status.HTTP_200_OK)
 
 ## Код ниже - это первоначальная реализация лайков и дизлайков (Задание 5)
