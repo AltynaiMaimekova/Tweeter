@@ -118,6 +118,7 @@ class RecommendationsView(APIView):
             tweets = Tweet.objects.filter(user=s.followed.user)
             for t in tweets:
                 recommendations.append(t)
+        recommendations.sort(key=lambda x: x.created, reverse=True)
         data = {'message': f'recommended tweets {recommendations}'}
         return Response(data, status=status.HTTP_200_OK)
 
